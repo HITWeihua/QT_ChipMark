@@ -6,22 +6,25 @@ ChipMarkWidget::ChipMarkWidget(QWidget *parent) : QWidget(parent)
 {  
     //Add Chip Child type to this Map
     //1 step:Add SOT** to this map
-    //2 step:Add ChipSOT(up,down) to vecChip
-    //3 step:Add ChipSOTData(up,down) to vecChipData;
-    //4 step:Add SOT** updateCurLabelModelKinds
-    //5 step:Add foot and root to updateCurLabelModel;
+    //2 step:Add ChipSOTData(up,down) to vecChipData;
+    //3 step:Add SOT** updateCurLabelModelKinds
+    //4 step:Add foot and root to updateCurLabelModel;
     chipstyleMap["SOT23"] = 0;
     chipstyleMap["SOT32"] = 1;
     chipstyleMap["SOT12"] = 2;
+    chipstyleMap["SOT88"] = 3;
     chipstyleMap[""] = 999;
 
-    vecChip.push_back(new ChipSOT(2,3));
-    vecChip.push_back(new ChipSOT(3,2));
-    vecChip.push_back(new ChipSOT(1,2));
+    mapChipType["SOT"] = 0;
+    mapChipType["BGA"] = 1;
 
-    vecChipData.push_back(new ChipSOTData(2,3));
-    vecChipData.push_back(new ChipSOTData(3,2));
-    vecChipData.push_back(new ChipSOTData(1,2));
+    vecChipType.push_back(new ChipSOT);
+    vecChipType.push_back(new BGA);
+
+    vecChildChipData.push_back(new ChipSOTData(2,3));
+    vecChildChipData.push_back(new ChipSOTData(3,2));
+    vecChildChipData.push_back(new ChipSOTData(1,2));
+    vecChildChipData.push_back(new ChipSOTData(8,8));
 
     imageview = new ImageView();
     imagescene = new ImageScene();
@@ -37,11 +40,9 @@ void ChipMarkWidget::placeItem()
     tableWidget->setRowCount(400);
     tableWidget->setColumnCount(1);
     tableWidget->setColumnWidth(0,200);
-//    tableWidget->setColumnWidth(1,2);
-//    tableWidget->setColumnWidth(2,2);
 
     viewmodelcheckBox = new QCheckBox(this);
-    viewmodelcheckBox->setText("View Model");
+    viewmodelcheckBox->setText("Not View Model");
 
     generatemodelButton = new QPushButton(this);
     generatemodelButton->setText("Generate Model");
@@ -104,13 +105,13 @@ void ChipMarkWidget::placeItem()
     itemzoomXSlider = new QSlider();
     itemzoomXSlider->setOrientation(Qt::Horizontal);
     itemzoomXSlider->setMinimum(1);
-    itemzoomXSlider->setMaximum(200);
+    itemzoomXSlider->setMaximum(1000);
     itemzoomXSlider->setValue(50);
 
     itemzoomYSlider = new QSlider();
     itemzoomYSlider->setOrientation(Qt::Horizontal);
     itemzoomYSlider->setMinimum(1);
-    itemzoomYSlider->setMaximum(200);
+    itemzoomYSlider->setMaximum(1000);
     itemzoomYSlider->setValue(50);
 
     itemzoomSpin  = new QSpinBox();
@@ -131,16 +132,17 @@ void ChipMarkWidget::placeItem()
     itemrotateSpin  = new QDoubleSpinBox();
     itemrotateSpin->setMinimum(-30);
     itemrotateSpin->setMaximum(30);
-    itemrotateSlider->setValue(0);
+    itemrotateSpin->setValue(0);
+    itemrotateSpin->setSingleStep(0.05);
 
     itemzoomYSpin  = new QSpinBox();
     itemzoomYSpin->setMinimum(1);
-    itemzoomYSpin->setMaximum(200);
+    itemzoomYSpin->setMaximum(1000);
     itemzoomYSpin->setValue(50);
 
     itemzoomXSpin  = new QSpinBox();
     itemzoomXSpin->setMinimum(1);
-    itemzoomXSpin->setMaximum(200);
+    itemzoomXSpin->setMaximum(1000);
     itemzoomXSpin->setValue(50);
 
     QHBoxLayout *zoomLayout = new QHBoxLayout;
@@ -313,7 +315,6 @@ void ChipMarkWidget::on_tableWidget_itemDoubleClicked(QTableWidgetItem *item)
         itemlrSlider->update();
         itemlrSpin->setMaximum(itemlrSlider->maximum());
         itemlrSpin->update();
-
         CurImgPixmap = imagescene -> addPixmap(QPixmap::fromImage(CurImg));
         CurImgPixmap->setPos(0,0);
         imageview->setScene(imagescene);
@@ -338,7 +339,8 @@ void ChipMarkWidget::updateParupdown()
         imagescene->update();
         imageview->update();
         update();
-        CurChip->NeedToSave = true;
+        CurChip->CurData->NeedToSave = true;
+        vecAllImgChipData.at(NoImage)->setData(CurChip->CurData);
     }
 
 }
@@ -358,7 +360,8 @@ void ChipMarkWidget::updateParlr()
         imagescene->update();
         imageview->update();
         update();
-        CurChip->NeedToSave =true;
+        CurChip->CurData->NeedToSave =true;
+        vecAllImgChipData.at(NoImage)->setData(CurChip->CurData);
     }
 }
 
@@ -387,7 +390,8 @@ void ChipMarkWidget::updateParzoomX()
         imagescene->update();
         imageview->update();
         update();
-        CurChip->NeedToSave =true;
+        CurChip->CurData->NeedToSave =true;
+        vecAllImgChipData.at(NoImage)->setData(CurChip->CurData);
     }
 }
 
@@ -404,7 +408,8 @@ void ChipMarkWidget::updateParzoomY()
         imagescene->update();
         imageview->update();
         update();
-        CurChip->NeedToSave = true;
+        CurChip->CurData->NeedToSave = true;
+        vecAllImgChipData.at(NoImage)->setData(CurChip->CurData);
     }
 }
 
@@ -424,7 +429,8 @@ void ChipMarkWidget::updateParrotate()
         imagescene->update();
         imageview->update();
         update();
-        CurChip->NeedToSave =true;
+        CurChip->CurData->NeedToSave =true;
+        vecAllImgChipData.at(NoImage)->setData(CurChip->CurData);
     }
 }
 
@@ -451,26 +457,38 @@ void ChipMarkWidget::updateCurLabelModel()
         case 0://SOT23
         {
             QStringList ChipPin;
-            ChipPin << "Body000" << "UpFoot001" <<"UpRoot002"<<"UpFoot003"<<"UpRoot004"
-                    <<"DownRoot005" <<"DownFoot006"<<"DownRoot007" <<"DownFoot008"
-                    <<"DownRoot009" <<"DownFoot010";
+            ChipPin << "Body000" << "Up001" <<"Up002"
+                    <<"Down003"<<"Down004" <<"Down005"
+                    <<"Outline006";
             chippinBox->addItems(ChipPin);
             break;
         }
         case 1://SOT32
         {
             QStringList ChipPin;
-            ChipPin << "Body000" << "UpFoot001" <<"UpRoot002"<<"UpFoot003"<<"UpRoot004"
-                    <<"UpFoot005" <<"UpRoot006"<<"DownRoot007" <<"DownFoot008"
-                    <<"DownRoot009" <<"DownFoot010";
+            ChipPin << "Body000" << "Up001" <<"Up002"<<"Up003"
+                    <<"Down004" <<"Down005"
+                    <<"Outline006";
             chippinBox->addItems(ChipPin);
             break;
         }
         case 2://SOT12
         {
             QStringList ChipPin;
-            ChipPin << "Body0" << "UpFoot1" <<"UpRoot2"<<"DownRoot3"
-                <<"DownFoot4"<<"DownRoot5" <<"DownFoot6";
+            ChipPin << "Body000"
+                    << "Up001"
+                    <<"Down002"<<"Down003"
+                    <<"Outline004";
+            chippinBox->addItems(ChipPin);
+            break;
+        }
+        case 3://SOT88
+        {
+            QStringList ChipPin;
+            ChipPin << "Body000"
+                    << "Up001" <<"Up002"<< "Up003" <<"Up004"<< "Up005" <<"Up006"<< "Up007" <<"Up008"
+                    << "Down009"<<"Down010"<<"Down011" <<"Down012"<< "Down013"<<"Down014"<<"Down015" <<"Down016"
+                    <<"Outline017";
             chippinBox->addItems(ChipPin);
             break;
         }
@@ -493,7 +511,7 @@ void ChipMarkWidget::updateCurLabelModelKinds()
         case 0://SOT
         {
             QStringList ChipStyle2;
-            ChipStyle2 << "SOT23" <<"SOT32" << "SOT12";
+            ChipStyle2<<"SOT88" << "SOT23" <<"SOT32" << "SOT12";
             chipstyle2Box->clear();
             chipstyle2Box->addItems(ChipStyle2);
             break;
@@ -525,20 +543,20 @@ bool ChipMarkWidget::generateCurLabelModel()
                 {
                     imagescene->removeItem(CurChip);
                 }
-                CurChip = vecAllChip[NoImage];
-                int i = chipstyleMap[chipstyle2Box->currentText()];
-                CurChip->setHandlesChildEvents(false);
+                int i = chipstyleMap[chipstyle2Box->currentText()];                
                 QString str = ImageNamesList[NoImage];
                 //If there exists the file with the same name as the CurImg,it will load it
                 //else it will load the default model in my document
                 QString modelstr =  QString(CurSaveFolder+"/"+str.split('.').at(0)+".json");
                 if(QFile(modelstr).exists())
                 {
-                    CurChip->CurData->readDataFromJson(modelstr);
+                    vecAllImgChipData.at(NoImage)->readDataFromJson(modelstr);
                 }else{
-                    vecChipData[i]->setData(vecChip[i]->CurData);
-                    CurChip->setCurData(vecChipData[i]);
+                    vecAllImgChipData.at(NoImage)->setData(vecChildChipData.at(i));
                 }
+                CurChip =  vecChipType.at(mapChipType[vecAllImgChipData.at(NoImage)->ChipType]);
+                CurChip->setCurData(vecAllImgChipData.at(NoImage));
+                CurChip->setHandlesChildEvents(false);
                 CurChip->InitFromData();
                 imagescene->addItem(CurChip);
                 imagescene->update();
@@ -588,10 +606,8 @@ void ChipMarkWidget::setCurChipData()
     {
        CurChip->UpdateToData();
        int i = chipstyleMap[CurChip->CurData->ChipChildType];
-       vecChipData.at(i)->setData(CurChip->CurData);
-       vecChip.at(i)->CurData->setData(CurChip->CurData);
-       vecChip.at(i)->InitFromData();
-       vecChip.at(i)->writeLabelModel(vecChip.at(i)->DefaultChipPath);
+       vecChildChipData.at(i)->setData(CurChip->CurData);
+       vecChildChipData.at(i)->writeDataToJson(vecChildChipData.at(i)->DefaultChipPath);
     }
 }
 
@@ -599,14 +615,13 @@ void ChipMarkWidget::setCurMouseMovePar()
 {
     disconnect(itemupdownSlider,SIGNAL(valueChanged(int)),this,SLOT(updateParupdown()));
     disconnect(itemlrSlider,SIGNAL(valueChanged(int)),this,SLOT(updateParlr()));
-    //QPointF point = CurOperateItem->mapToScene(CurOperateItem->mapFromParent(CurOperateItem->pos()));
     QPointF point = CurChip->mapToScene(CurOperateItem->pos());
     itemupdownSlider->setValue(point.y());
     itemlrSlider->setValue(point.x());
     qDebug() << "Item Pos" << point;
     connect(itemupdownSlider,SIGNAL(valueChanged(int)),this,SLOT(updateParupdown()));
     connect(itemlrSlider,SIGNAL(valueChanged(int)),this,SLOT(updateParlr()));
-    CurChip->NeedToSave =true;
+    CurChip->CurData->NeedToSave = true;
 }
 
 void ChipMarkWidget::mouseMoveEvent(QMouseEvent *e)
@@ -649,7 +664,7 @@ bool ChipMarkWidget::readImages(QString ImageFolder_)
         //将ImageFullPathList中文件名字显示到窗口
         int len = ImageFullPathList.length();
         tableWidget->setRowCount(len);
-        vecAllChip.clear();
+        vecAllImgChipData.clear();
         if(chipstyle2Box->currentText() != "")
         {
             int i = chipstyleMap[chipstyle2Box->currentText()];
@@ -657,16 +672,19 @@ bool ChipMarkWidget::readImages(QString ImageFolder_)
             {
                 switch (i) {
                 case 0:
-                    vecAllChip.push_back(new ChipSOT(2,3));
+                    vecAllImgChipData.push_back(new ChipSOTData(2,3));
                     break;
                 case 1:
-                    vecAllChip.push_back(new ChipSOT(3,2));
+                    vecAllImgChipData.push_back(new ChipSOTData(3,2));
                     break;
                 case 2:
-                    vecAllChip.push_back(new ChipSOT(1,2));
+                    vecAllImgChipData.push_back(new ChipSOTData(1,2));
+                    break;
+                case 3:
+                    vecAllImgChipData.push_back(new ChipSOTData(8,8));
                     break;
                 default:
-                    vecAllChip.push_back(new ChipSOT(2,3));
+                    vecAllImgChipData.push_back(new ChipSOTData(2,3));
                     break;
                 }
                 tableWidget->setItem(row,0,new QTableWidgetItem(ImageNamesList.at(row)));
@@ -674,7 +692,6 @@ bool ChipMarkWidget::readImages(QString ImageFolder_)
             return true;
         }else
         {
-
             return false;
         }
     }
@@ -682,7 +699,7 @@ bool ChipMarkWidget::readImages(QString ImageFolder_)
         return false;
 }
 
-bool ChipMarkWidget::writeModelAndImage(const QString &fileName )
+bool ChipMarkWidget::writeAllModels(const QString &fileName )
 {
     CurSaveFolder = fileName;
     QDir IF(CurSaveFolder);
@@ -691,7 +708,7 @@ bool ChipMarkWidget::writeModelAndImage(const QString &fileName )
     QStringList SavedName;
     SavedName= SavePathList.replaceInStrings(CurSaveFolder + "/","");
     //将ImageFullPathList中文件名字显示到窗口
-    if(vecAllChip.length() >0 )
+    if(vecAllImgChipData.length() >0 )
     {
         for(int m = 0; m <ImageNamesNoPostList.length();m++ )
         {
@@ -707,9 +724,9 @@ bool ChipMarkWidget::writeModelAndImage(const QString &fileName )
         {
             int j = vecLabeledImgNum.at(i);
             QString str = ImageNamesList[j];
-            if(vecAllChip.at(j)->NeedToSave)
+            if(vecAllImgChipData.at(j)->NeedToSave)
             {
-                vecAllChip.at(j)->writeLabelModel(QString(CurSaveFolder + "/"+str.split('.').at(0)));
+                vecAllImgChipData.at(j)->writeDataToJson(QString(CurSaveFolder + "/"+str.split('.').at(0)));
                 QBrush Q(QColor(Qt::green));
                 tableWidget->item(j,0)->setBackground(Q);
             }
@@ -726,6 +743,10 @@ bool ChipMarkWidget::writeModelAndImage(const QString &fileName )
                 tableWidget->item(n,0)->setBackground(Q);
             }
         }
+        if(CurChip != NULL)
+        {
+            CurChip->CurData->NeedToSave = false;
+        }
         return true;
     }else{
         mainwindow->statusBar()->showMessage("No load Image");
@@ -733,6 +754,7 @@ bool ChipMarkWidget::writeModelAndImage(const QString &fileName )
     }
 }
 
+//Read Single Model and set it as temp default
 bool ChipMarkWidget::readModel(QString ModelPath)
 {
    if(chipstyleBox->currentText() == "SOT")
@@ -742,7 +764,7 @@ bool ChipMarkWidget::readModel(QString ModelPath)
        chipstyleBox->setCurrentText(data->ChipType);
        chipstyle2Box->setCurrentText(data->ChipChildType);
        int i = chipstyleMap[chipstyle2Box->currentText()];
-       vecChipData[i]->setData(data);
+       vecChildChipData.at(i)->setData(data);
        mainwindow->statusBar()->showMessage("Read Model Successfully.");
        return true;
    }else{
@@ -766,21 +788,11 @@ bool ChipMarkWidget::writeModel(const QString &fileName)
         mainwindow->statusBar()->showMessage("WARNING!No Chip Model");
         return false;
     }else{
-        CurChip->writeLabelModel(fileName);
+        CurChip->CurData->writeDataToJson(fileName);
         QBrush Q(QColor(Qt::green));
         tableWidget->item(NoImage,0)->setBackground(Q);
         return true;
     }
-}
-
-bool ChipMarkWidget::readLabelImage(const QString &fileName)
-{
-    return true;
-}
-
-bool ChipMarkWidget::writeLabelImage(const QString &fileName)
-{
-    return true;
 }
 
 void ChipMarkWidget::wheelEvent(QWheelEvent *e)
@@ -806,34 +818,40 @@ void ChipMarkWidget::setupMatrix()
 
 bool ChipMarkWidget::okToContinue()
 {
-    if(vecAllChip.length() !=0)
+    if(CurChip == NULL)
     {
-        if (vecAllChip.at(NoImage)->NeedToSave)
-        {
-            int r = QMessageBox::warning(this, tr("Mark Model"),
-                            tr("The Image Model has been modified.\n"
-                               "Do you want to save your changes?"),
-                            QMessageBox::Yes | QMessageBox::No
-                            | QMessageBox::Cancel);
-            if (r == QMessageBox::Yes)
-            {
-                vecAllChip.at(NoImage)->NeedToSave = ! mainwindow->save();
-                return vecAllChip.at(NoImage)->NeedToSave;
-            } else if (r == QMessageBox::Cancel)
-            {
-                return false;
-            }else if(r == QMessageBox::No)
-            {
-                QBrush Q(QColor(Qt::red));
-                tableWidget->item(NoImage,0)->setBackground(Q);
-            }
-
-        }
+        mainwindow->statusBar()->showMessage("No Model:Please Generate Model");
         return true;
     }else
     {
-        return true;
+        vecAllImgChipData.at(NoImage)->setData(CurChip->CurData);
+        if(vecAllImgChipData.length() !=0)
+        {
+            if (vecAllImgChipData.at(NoImage)->NeedToSave)
+            {
+                int r = QMessageBox::warning(this, tr("Mark Model"),
+                                tr("The Image Model has been modified.\n"
+                                   "Do you want to save your changes?"),
+                                QMessageBox::Yes | QMessageBox::No
+                                | QMessageBox::Cancel);
+                if (r == QMessageBox::Yes)
+                {
+                    vecAllImgChipData.at(NoImage)->NeedToSave = ! mainwindow->save();
+                    return !vecAllImgChipData.at(NoImage)->NeedToSave;
+                } else if (r == QMessageBox::Cancel)
+                {
+                    return false;
+                }else if(r == QMessageBox::No)
+                {
+                    QBrush Q(QColor(Qt::red));
+                    tableWidget->item(NoImage,0)->setBackground(Q);
+                }
+
+            }
+            return true;
+        }else
+        {
+            return true;
+        }
     }
-
-
 }

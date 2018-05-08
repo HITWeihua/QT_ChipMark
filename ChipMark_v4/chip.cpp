@@ -15,6 +15,11 @@ bool ChipData::readDataFromJson(QString ModelPath)
 
 }
 
+bool ChipData::writeDataToJson(QString ModelPath)
+{
+
+}
+
 void ChipData::setData(ChipData *data)
 {
     this->up = data->up;
@@ -25,6 +30,8 @@ void ChipData::setData(ChipData *data)
     this->ChipChildType = data->ChipChildType;
     this->ChipType =data->ChipType;
     this->ChipRotation = data->ChipRotation;
+    this->NeedToSave = data->NeedToSave;
+    DefaultChipPath = QString(DefaultChipFloder +"/"+ChipChildType);
 }
 
 Chip::Chip()
@@ -48,11 +55,6 @@ bool Chip::UpdateToData()
 }
 
 bool Chip::InitDefault()
-{
-
-}
-
-bool Chip::writeLabelModel(QString filename)
 {
 
 }

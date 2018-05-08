@@ -15,18 +15,14 @@ class ChipMarkWidget : public QWidget
     Q_OBJECT
 public:
     explicit ChipMarkWidget(QWidget *parent = nullptr);
-
 public:
     int NoImage = 0;
     MainWindow* mainwindow = NULL;
     ImageScene* imagescene = NULL;
     ImageView * imageview = NULL;
 
-    Chip * CurChip = NULL;
-
     QGraphicsItem * CurOperateItem = NULL;
     QGraphicsPixmapItem *CurImgPixmap = NULL;
-    //Item * CurOperateItem = NULL;
 
     QImage CurImg;
     QImage CurLabel;
@@ -70,18 +66,18 @@ public:
     QComboBox *chipstyle2Box;
     QComboBox *chippinBox;
     QMap<QString,int> chipstyleMap;
-    QVector<Chip *> vecChip;
-    QVector<Chip *> vecAllChip;
-    QVector<ChipData *> vecChipData;
+    QMap<QString,int> mapChipType;
+    Chip * CurChip = NULL;
+    QVector<Chip *> vecChipType;
+    QVector<ChipData *> vecChildChipData;
+    QVector<ChipData *> vecAllImgChipData;
     QVector<int > vecLabeledImgNum;
     bool LoadImgFlag = false;
 public:
     bool readImages(QString ImageFolder_);
-    bool writeModelAndImage(const QString &fileName );
+    bool writeAllModels(const QString &fileName );
     bool readModel(QString ModelPath);
     bool writeModel(const QString &fileName);
-    bool writeLabelImage(const QString &fileName);
-    bool readLabelImage(const QString &fileName);
 public slots:
     void modelcheckState(int state);
     void setupMatrix();

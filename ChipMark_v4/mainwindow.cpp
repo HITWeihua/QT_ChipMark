@@ -46,13 +46,13 @@ void MainWindow::createActions()
     openAction->setStatusTip(tr("Open images by a folder"));
     connect(openAction, SIGNAL(triggered()), this, SLOT(open()));
 
-    saveAction = new QAction(tr("&Save"), this);
+    saveAction = new QAction(tr("&Save All Models"), this);
     saveAction->setIcon(QIcon(":/images/save.png"));
     saveAction->setShortcut(QKeySequence::Save);
     saveAction->setStatusTip(tr("Save the Model and Image to disk"));
     connect(saveAction, SIGNAL(triggered()), this, SLOT(save()));
 
-    saveAsAction = new QAction(tr("Save &As..."), this);
+    saveAsAction = new QAction(tr("Save All Models As..."), this);
     saveAsAction->setStatusTip(tr("Save the Model and Image under a new ""name"));
     connect(saveAsAction, SIGNAL(triggered()), this, SLOT(saveAs()));
 
@@ -146,7 +146,7 @@ bool MainWindow::save()
     if (CurSaveFloder == NULL) {
         return saveAs();
     } else {
-        return chipMarkWidget->writeModelAndImage(CurSaveFloder);
+        return chipMarkWidget->writeAllModels(CurSaveFloder);
     }
 }
 
@@ -160,7 +160,7 @@ bool MainWindow::saveAs()
         statusBar()->showMessage("Create the Save path!");
     }
 
-    return chipMarkWidget->writeModelAndImage(CurSaveFloder);
+    return chipMarkWidget->writeAllModels(CurSaveFloder);
 }
 
 void MainWindow::open()
@@ -221,51 +221,29 @@ void MainWindow::openmodel()
 //Image functions
 bool MainWindow::saveImage()
 {
-    if (CurLabelImgPath.isEmpty()) {
-        return saveImageAs();
-    } else {
-        return chipMarkWidget->writeLabelImage(CurLabelImgPath);
-    }
+
 }
 
 bool MainWindow::saveImageAs()
 {
-    QString fileName = QFileDialog::getSaveFileName(this,
-                               tr("Save Lanel Image"), ".",
-                               tr("Label Image(*.bmp)"));
-    if (fileName.isEmpty())
-        return false;
-    CurLabelImgPath = fileName;
-    return chipMarkWidget->writeLabelImage(CurLabelImgPath);
+
 }
 
 void MainWindow::openImage()
 {
-    if (okToContinue())
-    {
-        //获取文件夹路径名
-        QString fileName = QFileDialog::getOpenFileName(this,tr("Mark Modle"), ".",tr("Label Image(*.bmp)"));
-        if (!fileName.isEmpty())
-        {
-            if (!chipMarkWidget->readLabelImage(fileName))
-            {
-                statusBar()->showMessage(tr("Loading canceled"), 2000);
-            }
-            statusBar()->showMessage(tr("File loaded"), 2000);
-        }
-    }
+
 }
 
 bool MainWindow::okToContinue()
 {
-    if(chipMarkWidget->vecAllChip.length() == 0)
+    if(chipMarkWidget->vecAllImgChipData.length() == 0)
     {
         return true;
     }else
     {
-        for(int i = 0;i< chipMarkWidget->vecAllChip.length();i++)
+        for(int i = 0;i< chipMarkWidget->vecAllImgChipData.length();i++)
         {
-            if(chipMarkWidget->vecAllChip.at(i)->NeedToSave)
+            if(chipMarkWidget->vecAllImgChipData.at(i)->NeedToSave)
             {
                 int r = QMessageBox::warning(this, tr("Mark Model"),
                                 tr("The Image Model has been modified.\n"

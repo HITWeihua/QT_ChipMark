@@ -26,50 +26,49 @@ public:
     }
 public:
     bool Initpar()
-    {
+    {        
         ChipType = "SOT";
         ChipChildType = "SOT" + QString::number(up*10 +down);
-        totalpin = (up+down)*2+1;
-        for(int i =0; i< (up+down)*2+1;i++)
+        DefaultChipPath = QString(DefaultChipFloder +"/"+ ChipChildType);
+        if(QFile(DefaultChipPath +".json").exists())
         {
-            QVector<qreal> Item;
-            Item.push_back(0);
-            Item.push_back(0);
-            Item.push_back(50);
-            Item.push_back(50);
-            Item.push_back(0);
-            par.push_back(Item);
+            readDataFromJson(DefaultChipPath +".json");
+        }else{
+            totalpin = up+down+2;
+            NeedToSave = false;
+            for(int i =0; i< totalpin;i++)
+            {
+                QVector<qreal> Item;
+                Item.push_back(0);
+                Item.push_back(0);
+                Item.push_back(50);
+                Item.push_back(50);
+                Item.push_back(0);
+                par.push_back(Item);
+            }
         }
     }
 public:
     virtual bool readDataFromJson(QString ModelPath) override;
+    virtual bool writeDataToJson(QString filename) override;
 };
 
 class ChipSOT : public Chip
 {
 public:
     ChipSOT();
-    ChipSOT(int up,int down);
     ~ChipSOT();
     QRectF boundingRect() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,QWidget *widget);
 public:
-    int up;
-    int down;
-    int totalpin = (up+down)*2 +1;
-    bool hasBody;
-    //ChipSOTData *CurData;
-    void setCurData(ChipData *data);
-    //---UF1(1)---1.9---UF2(3)---
-    //---UR1(2)---------UR2(4)---
+    //---UP(1)---1.9---UP(2)---
     //-----------Body(0)---------
-    //---DR1(5)--DR2(7)-DR3(9)---
-    //---DF1(6)--DF2(8)-DF3(10)--
+    //---DOWN1(3)--DOWN(4)-DOWN(5)---
 public:
+    void setCurData(ChipData *data);
     virtual bool InitFromData() override;
     virtual bool UpdateToData() override;
     virtual bool InitDefault() override;
-    virtual bool writeLabelModel(QString filename) override;
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);

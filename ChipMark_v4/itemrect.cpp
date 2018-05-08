@@ -68,10 +68,6 @@ void ItemRect::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     qDebug()<<" ItemRect:: "<<event->scenePos();
     QGraphicsItem::mouseMoveEvent(event);
-//    QPointF point = mapToParent(mapFromScene(event->scenePos()));
-//    //setPos(mapToParent(mapFromScene(event->scenePos())));
-//    setX(point.x());
-//    setY(point.y());
     update();
 }
 

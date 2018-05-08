@@ -7,25 +7,13 @@ ChipSOT::ChipSOT( )
     QGraphicsItemGroup::setFlag(QGraphicsItem::ItemIsMovable);
     QGraphicsItemGroup::setFlag(QGraphicsItem::ItemIsFocusable,true);
     QGraphicsItem::setHandlesChildEvents(false);
-    ChipSOT(2,3);
-    CurData = new ChipSOTData(up,down);
+    CurData = new ChipSOTData();
     InitDefault();
 }
 
 ChipSOT::~ChipSOT( )
 {
 
-}
-
-ChipSOT::ChipSOT(int up, int down)
-{
-    QGraphicsItemGroup::setFlag(QGraphicsItem::ItemIsMovable);
-    QGraphicsItemGroup::setFlag(QGraphicsItem::ItemIsFocusable,true);
-    QGraphicsItem::setHandlesChildEvents(false);
-    CurData = new ChipSOTData(up,down);
-    this->up = up;
-    this->down = down;
-    InitDefault();
 }
 
 bool ChipSOT::InitDefault()
@@ -46,21 +34,23 @@ bool ChipSOT::InitFromData()
     if(CurData != NULL)
     {
         removeAllItem();
-        this->up = CurData->up;
-        this->down = CurData->down;
-        for(int i = 0 ; i < 2*(up+down) + 1 ; i++ )
+        int up = CurData->up;
+        int down = CurData->down;
+        for(int i = 0 ; i < CurData->totalpin;i++ )
         {
             vecItem.push_back( new ItemRect(0,0,50,50));
             vecItem.at(i)->setScale(scale());
             vecItem.at(i)->setData(0,50);
             vecItem.at(i)->setData(1,50);
-            if(i < up*2 + 1 && i>0)
+            if(i < up + 1 && i>0)
             {
                 vecItem.at(i)->setData(2,"Red");
             }
-            else if(i >=  2*up + 1)
+            else if(i >=  up + 1)
             {
-                vecItem.at(i)->setData(2,"Green");
+                if(i == CurData->totalpin -1)
+                vecItem.at(i)->setData(2,"Blue");
+                else vecItem.at(i)->setData(2,"Green");
             }
             else if(i == 0)
             {
@@ -91,12 +81,9 @@ bool ChipSOT::UpdateToData()
 {
     CurData->ChipRotation = rotation();
     CurData->ChipType = "SOT";
-    CurData->ChipChildType = "SOT"+ QString::number(10*up+down);
-    qDebug()<< CurData->ChipChildType;
-    CurData->up = up;
-    CurData->down = down;
     CurData->par.clear();
-    for(int i = 0;i<2*(up+down) + 1;i++)
+    qreal Totalrotation = 0;
+    for(int i = 0;i<CurData->totalpin;i++)
     {
         QPointF posToScene =  this -> mapToScene(vecItem.at(i)->pos());
         QVector<qreal> Item;
@@ -106,14 +93,19 @@ bool ChipSOT::UpdateToData()
         Item.push_back(vecItem.at(i)->data(1).toInt());
         Item.push_back(vecItem.at(i)->rotation());
         CurData->par.push_back(Item);
+        if(i>0)
+        {
+            Totalrotation = Totalrotation + vecItem.at(i)->rotation();
+        }
     }
-    NeedToSave = true;
+    CurData->ChipRotation = Totalrotation /(CurData->up+CurData->down);
 }
 
 void ChipSOT::setCurData(ChipData * data)
 {
     CurData->up = data->up;
     CurData->down = data->down;
+    CurData->totalpin =data->totalpin;
     CurData->par.clear();
     CurData->par = data->par;
     CurData->ChipChildType = data->ChipChildType;
@@ -123,7 +115,6 @@ void ChipSOT::setCurData(ChipData * data)
 
 void ChipSOT::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,QWidget *widget)
 {
-    qDebug("ChipSOT::Paint");
     painter->setPen(QPen(QColor(255,0,0,100)));
 }
 
@@ -138,65 +129,6 @@ void ChipSOT::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     qDebug()<<" ChipSOT.Position:: "<<event->pos();
     QGraphicsItem::mouseMoveEvent(event);
     update();
-}
-
-bool ChipSOT::writeLabelModel(QString filename)
-{
-    QJsonObject json;
-    QJsonObject parameter;
-    qreal Totalrotation = 0;
-    for(int i = 0;i<2*(up+down) + 1;i++)
-    {
-        QJsonArray body;
-        QPointF posToScene =  this -> mapToScene(vecItem.at(i)->pos());
-        body.append(qRound (posToScene.x()));
-        body.append(qRound (posToScene.y()));
-        body.append(vecItem.at(i)->data(0).toInt());
-        body.append(vecItem.at(i)->data(1).toInt());
-        body.append(vecItem.at(i)->rotation());
-        if(i>0)
-        {
-            Totalrotation = Totalrotation + vecItem.at(i)->rotation();
-        }
-        QString PinName;
-        if(i <= up *2 && i>0)
-        {
-            PinName += "Up";
-            if(i%2 == 0)
-                PinName += "Root";
-            else PinName += "Foot";
-        }
-        else if(i > up*2 )
-        {
-            PinName += "Down";
-            if(i%2 != 0)
-                PinName += "Root";
-            else PinName += "Foot";
-        }
-        else PinName += "Body";
-        PinName += QString::number(i);
-        parameter.insert(PinName,body);
-    }
-    ChipRotation = Totalrotation /2*(up+down);
-    json.insert("ChipType","SOT");
-    json.insert("ChipChildType","SOT"+QString::number(up*10 + down));
-    json.insert("Num_Up",up);
-    json.insert("Num_Down",down);
-    json.insert("ChipRotation",ChipRotation);
-    json.insert("Parameter",parameter);
-
-    QJsonDocument document;
-    document.setObject(json);
-    QByteArray byteArray = document.toJson(QJsonDocument::Indented);
-    QFile saveFile(filename + ".json");
-    if (!saveFile.open(QIODevice::WriteOnly))
-    {
-        qWarning("Couldn't open save file.");
-        return false;
-    }
-    bool f =saveFile.write(byteArray);
-    NeedToSave = false;
-    return true;
 }
 
 QRectF ChipSOT::boundingRect() const
@@ -259,19 +191,15 @@ bool ChipSOTData::readDataFromJson(QString ModelPath)
                     for (int i = 0; i < nSize; ++i)
                     {
                         QString PinName;
-                        if(i <= up *2 && i>0)
+                        if(i <= up  && i>0)
                         {
                             PinName += "Up";
-                            if(i%2 == 0)
-                                PinName += "Root";
-                            else PinName += "Foot";
                         }
-                        else if(i > up*2 )
+                        else if(i > up )
                         {
-                            PinName += "Down";
-                            if(i%2 != 0)
-                                PinName += "Root";
-                            else PinName += "Foot";
+                            if(i == totalpin -1)
+                                PinName += "Outline";
+                            else PinName += "Down";
                         }
                         else PinName += "Body";
                         PinName += QString::number(i);
@@ -300,5 +228,52 @@ bool ChipSOTData::readDataFromJson(QString ModelPath)
     return true;
 }
 
+bool ChipSOTData::writeDataToJson(QString filename)
+{
+    QJsonObject json;
+    QJsonObject parameter;
+    for(int i = 0;i<totalpin;i++)
+    {
+        QJsonArray body;
+        body.append(qRound (par.at(i).at(0)));
+        body.append(qRound (par.at(i).at(1)));
+        body.append(par.at(i).at(2));
+        body.append(par.at(i).at(3));
+        body.append(par.at(i).at(4));
+        QString PinName;
+        if(i <= up  && i>0)
+        {
+            PinName += "Up";
+        }
+        else if(i > up )
+        {
+            if(i == totalpin -1)
+                PinName += "Outline";
+            else PinName += "Down";
+        }
+        else PinName += "Body";
+        PinName += QString::number(i);
+        parameter.insert(PinName,body);
+    }
+    json.insert("ChipType","SOT");
+    json.insert("ChipChildType","SOT"+QString::number(up*10 + down));
+    json.insert("Num_Up",up);
+    json.insert("Num_Down",down);
+    json.insert("ChipRotation",ChipRotation);
+    json.insert("Parameter",parameter);
 
+    QJsonDocument document;
+    document.setObject(json);
+    QByteArray byteArray = document.toJson(QJsonDocument::Indented);
+    QFile saveFile(filename + ".json");
+    if (!saveFile.open(QIODevice::WriteOnly))
+    {
+        qWarning("Couldn't open save file.");
+        return false;
+    }
+    if(saveFile.write(byteArray))
+    NeedToSave = false;
+    else NeedToSave =true;
+    return !NeedToSave;
+}
 

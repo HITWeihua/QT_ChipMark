@@ -19,7 +19,6 @@ public:
 public:
     ItemRect();
     //(cenx,ceny): Rect center position relative to Chip(ItemGroup)
-    //Item
     ItemRect(qreal cenx, qreal ceny, qreal width, qreal height);
     QRectF boundingRect() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,QWidget *widget);
